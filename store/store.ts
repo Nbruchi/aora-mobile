@@ -1,24 +1,37 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
-import { userApi } from './slices/user/userApi';
-import { postApi } from './slices/post/postApi';
-import { imageApi } from './slices/image/imageApi';
+import { persistReducer } from 'redux-persist';
 import userReducer from './slices/user/userSlice';
+import persistStore from "redux-persist/es/persistStore";
+import {userAPI} from "@/store/slices/user/userAPI";
+import {imageAPI} from "@/store/slices/image/imageAPI";
+// @ts-ignore
+import {postAPI} from "@/store/slices/post/postAPI";
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const persistConfig = {
+  key:"root",
+  storage: AsyncStorage,
+  whitelist: ["user"]
+}
+
+const rootReducer = combineReducers({
+  user: userReducer,
+  [userAPI.reducerPath]: userAPI.reducer,
+  [imageAPI.reducerPath]: imageAPI.reducer,
+  [postAPI.reducerPath]: postAPI.reducer,
+})
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    user: userReducer,
-    [userApi.reducerPath]: userApi.reducer,
-    [postApi.reducerPath]: postApi.reducer,
-    [imageApi.reducerPath]: imageApi.reducer,
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
-      userApi.middleware,
-      postApi.middleware,
-      imageApi.middleware
-    ),
+  reducer: persistedReducer,
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+    serializableCheck: false,
+  }).concat(userAPI.middleware, imageAPI.middleware, postAPI.middleware),
 });
+
+export const persistor = persistStore(store);
 
 setupListeners(store.dispatch);
 

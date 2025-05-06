@@ -1,46 +1,48 @@
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import {View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-
 import EmptyState from "@/components/EmptyState";
 import PostCard from "@/components/PostCard";
 import { icons } from "@/constants";
 import InfoBox from "@/components/InfoBox";
-
-// Import Redux hooks and slices
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { selectUser, clearUser } from "@/store/slices/user/userSlice";
-import { useLogoutMutation } from "@/store/slices/user/userApi";
-import { useGetPostsByUserIdQuery } from "@/store/slices/post/postApi";
+import {useAppDispatch, useAppSelector} from "@/store/hooks";
+import { useLogoutMutation } from "@/store/slices/user/userAPI";
+import {useGetPostsByUserIdQuery} from "@/store/slices/post/postAPI";
 
 const Profile = () => {
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectUser);
-    const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+    const user = useAppSelector((state) => state.user.user);
+    const [logoutApi, { isLoading: isLoggingOut }] = useLogoutMutation();
 
-    // Fetch user's posts
-    const { 
-        data: posts, 
-        isLoading: isLoadingPosts, 
-        error: postsError 
-    } = useGetPostsByUserIdQuery(user?._id || '', { 
-        skip: !user?._id,
-        refetchOnMountOrArgChange: true
-    });
+
+   const {
+       data: posts = [],
+       isLoading: isLoadingPosts,
+       error: postsError,
+       refetch: refetchPosts,
+       isFetching: isFetchingPosts,
+   } = useGetPostsByUserIdQuery(user?._id ?? "", {skip: !user?._id})
 
     const handleLogout = async () => {
-        try {
-            await logout().unwrap();
-            dispatch(clearUser());
-            router.replace("/login");
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
-    };
+       try{
+           await logoutApi().unwrap();
+           dispatch({type: 'user/clearUser'});
+           router.replace("/login");
+       }catch(error){
+           console.error(`Logout failed: ${error instanceof Error ? error.message : String(error)}`)
+       }
+    }
 
     if (!user) {
         router.replace("/login");
-        return null;
+        return (
+            <SafeAreaView className="bg-primary h-full">
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator size="large" color="#ffffff" />
+                    <Text className="text-white mt-4">Redirecting to login...</Text>
+                </View>
+            </SafeAreaView>
+        );
     }
 
     return (
@@ -51,6 +53,14 @@ const Profile = () => {
                 renderItem={({ item }) => (
                     <PostCard post={item} key={item._id} />
                 )}
+                refreshControl={
+                <RefreshControl
+                    refreshing={isFetchingPosts}
+                    onRefresh={refetchPosts}
+                    colors={["#fff"]}
+                    tintColor="#fff"
+                />
+                }
                 ListHeaderComponent={() => (
                     <View className="w-full justify-center items-center mt-6 mb-12 px-4">
                         <TouchableOpacity
@@ -70,14 +80,13 @@ const Profile = () => {
                         </TouchableOpacity>
                         <View className="w-16 h-16 border border-secondary rounded-lg justify-center items-center">
                             <Image
-                                source={{ uri: user.avatar || 'https://via.placeholder.com/150' }}
+                                source={require('@/assets/images/profile.png')}
                                 className="w-[90%] h-[90%] rounded-lg"
                                 resizeMode="cover"
-                                defaultSource={require('@/assets/images/profile.png')}
                             />
                         </View>
                         <InfoBox
-                            title={user.username}
+                            title={user?.username || 'User'}
                             containerStyles="mt-5"
                             textStyles="text-lg"
                         />
@@ -89,7 +98,7 @@ const Profile = () => {
                                 textStyles="text-xl"
                             />
                             <InfoBox
-                                title={user.followers?.length || 0}
+                                title={user?.followers?.length || 0}
                                 subtitle="Followers"
                                 textStyles="text-lg"
                             />
@@ -97,7 +106,7 @@ const Profile = () => {
                     </View>
                 )}
                 ListEmptyComponent={() => {
-                    if (isLoadingPosts) {
+                    if (isLoadingPosts || isFetchingPosts) {
                         return (
                             <View className="flex-1 justify-center items-center py-20">
                                 <ActivityIndicator size="large" color="#ffffff" />
@@ -121,13 +130,6 @@ const Profile = () => {
                             subtitle="You haven't created any posts yet"
                         />
                     );
-                }}
-                refreshing={isLoadingPosts}
-                onRefresh={() => {
-                    if (user?._id) {
-                        // Refetch posts
-                        // This will work because we're using RTK Query
-                    }
                 }}
             />
         </SafeAreaView>

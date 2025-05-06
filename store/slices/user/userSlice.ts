@@ -1,5 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RootState } from '@/store/store';
+import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 
 interface UserState {
   user: User | null;
@@ -8,48 +7,38 @@ interface UserState {
   error: string | null;
 }
 
-// Define initial state
-const initialState: UserState = {
+const initialState:UserState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  error: null,
-};
+  error: null
+}
 
-// Create the user slice
-export const userSlice = createSlice({
+const userSlice = createSlice({
   name: 'user',
   initialState,
-  reducers: {
-    setUser: (state, action: PayloadAction<User>) => {
+  reducers:{
+    setUser(state, action: PayloadAction<User>){
       state.user = action.payload;
-      state.isAuthenticated = true;
+      state.isAuthenticated = !!action.payload.token;
       state.isLoading = false;
       state.error = null;
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
+    setLoading(state, action: PayloadAction<boolean>){
       state.isLoading = action.payload;
     },
-    setError: (state, action: PayloadAction<string>) => {
+    setError(state, action: PayloadAction<string>){
       state.error = action.payload;
       state.isLoading = false;
     },
-    clearUser: (state) => {
+    clearUser(state){
       state.user = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
       state.error = null;
-    },
-  },
-});
+    }
+  }
+})
 
-// Export actions
-export const { setUser, setLoading, setError, clearUser } = userSlice.actions;
-
-// Export selectors
-export const selectUser = (state: RootState) => state.user.user;
-export const selectIsAuthenticated = (state: RootState) => state.user.isAuthenticated;
-export const selectIsLoading = (state: RootState) => state.user.isLoading;
-export const selectError = (state: RootState) => state.user.error;
-
-// Export reducer
+export const {setUser, setLoading, setError, clearUser} = userSlice.actions;
 export default userSlice.reducer;

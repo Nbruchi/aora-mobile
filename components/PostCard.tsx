@@ -1,15 +1,16 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { icons } from "@/constants";
-import { useAppSelector } from "@/store/hooks";
-import { selectUser } from "@/store/slices/user/userSlice";
-import { useLikePostMutation, useSavePostMutation } from "@/store/slices/post/postApi";
+import { useLikePostMutation, useSavePostMutation } from "@/store/slices/post/postAPI";
+import { usePostCreator } from "@/hooks/usePostCreator";
+import { useImageUrl } from "@/hooks/useImageUrl";
+import {useAppSelector} from "@/store";
 
 interface PostCardProps {
   post: Post;
 }
 
 const PostCard = ({ post }: PostCardProps) => {
-  const currentUser = useAppSelector(selectUser);
+  const currentUser = useAppSelector(state => state.user.user)
   const [likePost] = useLikePostMutation();
   const [savePost] = useSavePostMutation();
 
@@ -17,39 +18,13 @@ const PostCard = ({ post }: PostCardProps) => {
   const isLiked = post.likes?.includes(currentUser?._id || '');
   const isSaved = post.saves?.includes(currentUser?._id || '');
 
-  // Get the username from the post's creator (which could be a string ID or a User object)
-  const getUsername = () => {
-    if (typeof post.creator === 'string') {
-      return 'User';
-    } else {
-      return (post.creator as User).username;
-    }
-  };
+  // Get the username from the post's creator using our custom hook
+  const creatorUsername = usePostCreator(post.creator);
 
-  // Get the avatar from the post creator
-  const getAvatar = () => {
-    if (typeof post.creator === 'string') {
-      return 'https://via.placeholder.com/150';
-    } else {
-      return (post.creator as User).avatar || 'https://via.placeholder.com/150';
-    }
-  };
 
-  // Get the first image URL from the post's images array
-  const getImageUrl = () => {
-    if (!post.images || post.images.length === 0) {
-      return 'https://via.placeholder.com/300';
-    }
-
-    // If the first item is a string (ID), we can't display it directly
-    // In a real app, we would fetch the image by ID
-    if (typeof post.images[0] === 'string') {
-      return 'https://via.placeholder.com/300';
-    }
-
-    // Otherwise, it's an Image object
-    return `/images/${post.images[0]._id}`;
-  };
+  // Get the first image URL from the post's images array using our custom hook
+  const firstImage = post.images && post.images.length > 0 ? post.images[0] : undefined;
+  const imageUrl = useImageUrl(firstImage);
 
   const handleLike = async () => {
     try {
@@ -73,10 +48,9 @@ const PostCard = ({ post }: PostCardProps) => {
         <View className="flex-row items-center justify-center flex-1">
           <View className="w-[46px] h-[46px] rounded-lg border border-secondary justify-center items-center p-0.5">
             <Image
-              source={{ uri: getAvatar() }}
+              source={require('../assets/images/profile.png')}
               className="w-full h-full rounded-lg"
               resizeMode="cover"
-              defaultSource={require('../assets/images/profile.png')}
             />
           </View>
           <View className="justify-center flex-1 ml-3 gap-y-1">
@@ -87,7 +61,7 @@ const PostCard = ({ post }: PostCardProps) => {
               className="text-xs text-gray-100 font-pregular"
               numberOfLines={1}
             >
-              {getUsername()}
+              {creatorUsername}
             </Text>
           </View>
         </View>
@@ -101,7 +75,7 @@ const PostCard = ({ post }: PostCardProps) => {
       </View>
 
       <Image
-        source={{ uri: getImageUrl() }}
+        source={{ uri: imageUrl }}
         className="w-full h-60 mt-3 rounded-xl"
         resizeMode="cover"
         defaultSource={require('../assets/images/thumbnail.png')}

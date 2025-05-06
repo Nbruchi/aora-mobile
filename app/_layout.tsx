@@ -3,7 +3,8 @@ import {useFonts} from "expo-font"
 import "./global.css"
 import {useEffect} from "react";
 import { Provider } from 'react-redux';
-import { store } from '@/store/store';
+import {persistor, store} from '@/store/store';
+import {PersistGate} from "redux-persist/integration/react";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,12 +31,14 @@ export default function RootLayout() {
 
   return (
       <Provider store={store}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index"/>
-          <Stack.Screen name="(auth)"/>
-          <Stack.Screen name="(tabs)"/>
-          <Stack.Screen name="search/[query]"/>
-        </Stack>
+        <PersistGate loading={null} persistor={persistor}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index"/>
+            <Stack.Screen name="(auth)"/>
+            <Stack.Screen name="(tabs)"/>
+            <Stack.Screen name="search/[query]"/>
+          </Stack>
+        </PersistGate>
       </Provider>
   );
 }

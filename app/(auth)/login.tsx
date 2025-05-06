@@ -6,9 +6,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { images } from "@/constants";
 import FormField from "@/components/FormField";
 import CustomButton from "@/components/CustomButton";
-import { useLoginMutation } from "@/store/userApi";
+import { useLoginMutation } from "@/store/slices/user/userAPI";
 import { useAppDispatch } from "@/store/hooks";
-import { setUser, setError } from "@/store/userSlice";
+import {setError, setUser} from "@/store/slices/user/userSlice";
 
 const Login = () => {
     const [form, setForm] = useState({
@@ -17,7 +17,7 @@ const Login = () => {
     });
 
     const dispatch = useAppDispatch();
-    const [login, { isLoading, error, data }] = useLoginMutation();
+    const [loginApi, { isLoading, error, data }] = useLoginMutation();
 
     useEffect(() => {
         if (error) {
@@ -41,7 +41,7 @@ const Login = () => {
 
         if (data) {
             dispatch(setUser(data));
-            router.replace('/home');
+            router.replace("/home");
         }
     }, [error, data, dispatch]);
 
@@ -52,7 +52,7 @@ const Login = () => {
         }
 
         try {
-            await login(form);
+            await loginApi(form);
         } catch (err) {
             console.error('Login error:', err);
         }

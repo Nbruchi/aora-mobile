@@ -6,7 +6,6 @@ interface User {
     likedPosts?: string[];
     savedPosts?: string[];
     followers?: string[];
-    avatar?: string;
 }
 
 interface Image {

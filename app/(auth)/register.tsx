@@ -1,12 +1,12 @@
 import React, {useState, useEffect} from 'react'
-import {Alert, Image, SafeAreaView, ScrollView, View, Text} from "react-native";
 import {images} from "@/constants";
 import FormField from "@/components/FormField";
 import CustomButton from "@/components/CustomButton";
 import {Link, router} from "expo-router";
-import { useRegisterMutation } from "@/store/userApi";
+import { useRegisterMutation } from "@/store/slices/user/userAPI";
 import { useAppDispatch } from "@/store/hooks";
-import { setUser, setError } from "@/store/userSlice";
+import {setError, setUser} from "@/store/slices/user/userSlice";
+import {Alert, Image, SafeAreaView, ScrollView, View, Text} from "react-native";
 
 const Register = () => {
     const [form, setForm] = useState({
@@ -16,7 +16,7 @@ const Register = () => {
     });
 
     const dispatch = useAppDispatch();
-    const [register, { isLoading, error, data }] = useRegisterMutation();
+    const [registerApi, { isLoading, error, data }] = useRegisterMutation();
 
     useEffect(() => {
         if (error) {
@@ -39,8 +39,8 @@ const Register = () => {
         }
 
         if (data) {
-            dispatch(setUser(data));
-            router.replace('/login');
+            dispatch(setUser(data))
+            router.replace("/login")
         }
     }, [error, data, dispatch]);
 
@@ -51,7 +51,7 @@ const Register = () => {
         }
 
         try {
-            await register(form);
+            await registerApi(form);
         } catch (err) {
             console.error('Registration error:', err);
         }
