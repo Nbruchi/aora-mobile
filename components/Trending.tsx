@@ -1,102 +1,111 @@
-// import { useState } from "react";
-// import {
-//     View,
-//     Text,
-//     FlatList,
-//     TouchableOpacity,
-//     ImageBackground,
-//     Image,
-// } from "react-native";
-// import * as Animatable from "react-native-animatable";
-// import { icons } from "../constants";
-// import { ResizeMode, Video } from "expo-av";
-//
-// const zoomIn = {
-//     0: {
-//         scale: 0.9,
-//     },
-//     1: {
-//         scale: 1,
-//     },
-// };
-//
-// const zoomOut = {
-//     0: {
-//         scale: 1,
-//     },
-//     1: {
-//         scale: 0.9,
-//     },
-// };
-//
-// const TrendingItem = ({ item, activeItem }) => {
-//     const [play, setPlay] = useState(false);
-//
-//     return (
-//         <Animatable.View
-//             className="mr-5"
-//             animation={activeItem === item.$id ? zoomIn : zoomOut}
-//             duration={500}
-//         >
-//             {play ? (
-//                 <Video
-//                     source={{ uri: item.video }}
-//                     className="w-52 h-72 rounded-[35px] mt-3 bg-white/10"
-//                     resizeMode={ResizeMode.CONTAIN}
-//                     useNativeControls
-//                     shouldPlay
-//                     onPlaybackStatusUpdate={(status) => {
-//                         if (status.didJustFinish) {
-//                             setPlay(false);
-//                         }
-//                     }}
-//                 />
-//             ) : (
-//                 <TouchableOpacity
-//                     className="relative justify-center items-center"
-//                     activeOpacity={0.7}
-//                     onPress={() => setPlay(true)}
-//                 >
-//                     <ImageBackground
-//                         source={{ uri: item.thumbnail }}
-//                         className="w-52 h-72 my-5 rounded-[35px] overflow-hidden shadow-lg shadow-black/40"
-//                         resizeMode="cover"
-//                     />
-//                     <Image
-//                         source={icons.play}
-//                         className="w-12 h-12 absolute"
-//                         resizeMode="contain"
-//                     />
-//                 </TouchableOpacity>
-//             )}
-//         </Animatable.View>
-//     );
-// };
-//
-// const Trending = ({ posts }) => {
-//     const [activeItem, setActiveItem] = useState(posts[0]);
-//
-//     const viewableItemsChanged = ({ viewableItems }) => {
-//         if (viewableItems.length > 0) {
-//             setActiveItem(viewableItems[0].key);
-//         }
-//     };
-//
-//     return (
-//         <FlatList
-//             data={posts}
-//             keyExtractor={(item) => item.$id}
-//             renderItem={({ item }) => (
-//                 <TrendingItem item={item} activeItem={activeItem} />
-//             )}
-//             horizontal
-//             onViewableItemsChanged={viewableItemsChanged}
-//             viewabilityConfig={{
-//                 itemVisiblePercentThreshold: 70,
-//             }}
-//             contentOffset={{ x: 170 }}
-//         />
-//     );
-// };
-//
-// export default Trending;
+import React, { useCallback, useState } from "react";
+import {
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Modal,
+  View,
+  Pressable
+} from "react-native";
+import { useGetImagesQuery } from "@/store/slices/image/imageAPI";
+import { API_CONFIG } from "@/config";
+
+const Trending = () => {
+  const { data: images, isLoading } = useGetImagesQuery();
+  const [visible, setVisible] = useState(false);
+  const [zoomIndex, setZoomIndex] = useState<number | null>(null);
+
+  // Utility function to get image URL
+  const getImageUrl = (imageId: string) => {
+    if (!imageId) return 'https://via.placeholder.com/300';
+    return `${API_CONFIG.baseUrl}/images/${imageId}`;
+  };
+
+  const openModal = useCallback((idx: number) => {
+    setZoomIndex(idx);
+    setVisible(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setVisible(false);
+    setZoomIndex(null);
+  }, []);
+
+  const showPrev = useCallback(() => {
+    setZoomIndex(prev => (prev !== null && prev > 0 ? prev - 1 : prev));
+  }, []);
+
+  const showNext = useCallback(() => {
+    setZoomIndex(prev =>
+      (prev !== null && images && prev < images.length - 1) ? prev + 1 : prev
+    );
+  }, [images]);
+
+  if (isLoading || !images) return null;
+
+  return (
+    <View className="h-[120px]">
+      <FlatList
+        data={images}
+        keyExtractor={(item) => item._id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        renderItem={({item, index}) => (
+          <TouchableOpacity onPress={() => openModal(index)} activeOpacity={0.8}>
+            <Image
+              source={{ uri: getImageUrl(item._id) }}
+              className="w-24 h-24 rounded-lg mr-3 bg-gray-400"
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={{paddingHorizontal: 16}}
+      />
+
+      <Modal
+        visible={visible}
+        transparent
+        onRequestClose={closeModal}
+        animationType="fade"
+      >
+        <Pressable className="flex-1 bg-[rgba(20,20,20,0.85)] justify-center items-center" onPress={closeModal}>
+          {/* Prevent click-throughs on image/navigators */}
+          <Pressable className="max-w-full max-h-[85%] flex-row items-center" onPress={() => {}}>
+            {zoomIndex !== null && images[zoomIndex] && (
+              <>
+                {/* Navigation buttons */}
+                {zoomIndex > 0 && (
+                  <TouchableOpacity 
+                    className="absolute left-0 z-[5] p-4 h-full justify-center" 
+                    onPress={showPrev}
+                  >
+                    <View className="w-8 h-8 items-center justify-center">
+                      <View className="border-l-8 border-t-8 border-b-8 border-l-white border-t-transparent border-b-transparent w-0 h-0" />
+                    </View>
+                  </TouchableOpacity>
+                )}
+                <Image
+                  source={{ uri: getImageUrl(images[zoomIndex]._id) }}
+                  className="w-[85%] h-[70%] rounded-xl bg-[#222]"
+                  resizeMode="contain"
+                />
+                {zoomIndex < images.length - 1 && (
+                  <TouchableOpacity 
+                    className="absolute right-0 z-[5] p-4 h-full justify-center" 
+                    onPress={showNext}
+                  >
+                    <View className="w-8 h-8 items-center justify-center">
+                      <View className="border-r-8 border-t-8 border-b-8 border-r-white border-t-transparent border-b-transparent w-0 h-0" />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
+export default Trending;

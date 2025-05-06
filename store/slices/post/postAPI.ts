@@ -6,6 +6,7 @@ interface CreatePostInput {
     title: string;
     description: string;
     images: string[];
+    video?: File | Blob | any; // Added video field
 }
 
 interface  UpdatePostInput {
@@ -60,7 +61,7 @@ export const postAPI = createApi({
             query: (slug) => `/slug/${slug}`,
             providesTags: (result, error, slug) => [{type: 'Post', id: slug}]
         }),
-        createPost: builder.mutation<Post, CreatePostInput>({
+        createPost: builder.mutation<Post, CreatePostInput | FormData>({
             query: (body) =>({
                 url:"/",
                 method: "POST",

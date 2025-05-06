@@ -1,15 +1,22 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { icons } from "@/constants";
 import { router, usePathname } from "expo-router";
 import { View, TouchableOpacity, Image, TextInput, Alert } from "react-native";
 
 interface Props {
     initialQuery?: string;
+    onQueryChange?: (query: string) => void;
 }
 
-const SearchInput = ({ initialQuery }:Props) => {
+const SearchInput = ({ initialQuery , onQueryChange}:Props) => {
     const pathname = usePathname();
     const [query, setQuery] = useState(initialQuery || "");
+
+    useEffect(() => {
+        if (onQueryChange){
+            onQueryChange(query);
+        }
+    }, [query, onQueryChange]);
 
     return (
         <View className="flex flex-row items-center space-x-4 w-full h-16 px-4 bg-black-100 rounded-2xl border-2 border-black-200 focus:border-secondary">
